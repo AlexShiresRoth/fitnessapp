@@ -20,8 +20,12 @@
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+		"start": "node server",
+		"server": "nodemon server",
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"client": "npm start --prefix client",
+		"dev": "concurrently \"npm run server\" \"npm run client\"",
+		"compile:sass": "node-sass --include-path sass sass/main.scss client/src/stylesheets/style.css"
   },
   "repository": {
     "type": "git",

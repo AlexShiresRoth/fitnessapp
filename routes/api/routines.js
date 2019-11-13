@@ -113,11 +113,41 @@ router.delete('/:id', auth, async (req, res) => {
 //@access private
 router.put(
 	'/:id',
+	auth,
 	[check('title').isLength({ max: 30 }), check('description').isLength({ max: 100 })],
 	async (req, res) => {
+		const errors = validationResult(req);
+
+		if (!errors.isEmpty()) {
+			res.status(400).json({ msg: errors.array() });
+		}
+
+		const foundRoutine = await Routine.findById(req.params.id);
+
+		const { title, description, workout } = req.body;
+
 		try {
-			const routine = await Routine.findById(req.params.id);
-		} catch (error) {}
+			if (foundRoutine.user.toString() !== req.user.id) {
+				res.status(401).json({ msg: 'User not authorized' });
+			}
+
+			await foundRoutine.updateOne(
+				{
+					$set: { title, description, workout },
+				},
+				{ new: true }
+			);
+			await foundRoutine.save();
+			res.json(foundRoutine);
+			console.log(foundRoutine);
+		} catch (error) {
+			console.error(error.message);
+
+			if (error.kind === 'ObjectId') {
+				res.status(404).json({ msg: 'Routine Not Found' });
+			}
+			res.status(500).json({ msg: 'Internal Server Error, Please Contact Support' });
+		}
 	}
 );
 

@@ -138,8 +138,9 @@ router.put(
 				{ new: true }
 			);
 			await foundRoutine.save();
-			res.json(foundRoutine);
+
 			console.log(foundRoutine);
+			res.json(foundRoutine);
 		} catch (error) {
 			console.error(error.message);
 
@@ -150,5 +151,50 @@ router.put(
 		}
 	}
 );
+
+//@route PUT ROUTE
+//@desc update route for adding likes to a routine
+
+router.put('/like/:id', auth, async (req, res) => {
+	try {
+		const routine = await Routine.findById(req.params.id);
+
+		if (routine.likes.filter(like => like.user.toString() === req.user.id).length > 0) {
+			res.status(400).json({ msg: 'Routine already liked' });
+		}
+
+		routine.likes.unshift({ user: req.user.id });
+
+		await routine.save();
+		console.log(routine.likes);
+		res.json(routine.likes);
+	} catch (error) {
+		console.error(error.message);
+		res.status(500).json({ msg: 'Internal Server Error' });
+	}
+});
+
+//@route PUT ROUTE
+//@desc remove a like from a routine
+router.put('/unlike/:id', auth, async (req, res) => {
+	try {
+		const routine = await Routine.findById(req.params.id);
+
+		if (routine.likes.filter(like => like.user.toString() === req.user.id).length === 0) {
+			res.status(400).json({ msg: 'Routine has not been liked' });
+		}
+
+		const indexOfLike = routine.likes.map(like => like.user.toString().indexOf(req.user.id));
+
+		routine.likes.splice(indexOfLike, 1);
+
+		await routine.save();
+
+		res.json(routine.likes);
+	} catch (error) {
+		console.error(error.message);
+		res.status(500).json({ msg: 'Internal Server Error' });
+	}
+});
 
 module.exports = router;

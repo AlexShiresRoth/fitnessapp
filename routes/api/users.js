@@ -9,10 +9,12 @@ const User = require('../../models/User');
 
 //TODO setup img upload with cloudinary and multer
 
+//@route POST ROUTE
+//@desc create route for users
 router.post(
 	'/',
 	[
-		check('userName', 'userName is required')
+		check('username', 'userName is required')
 			.not()
 			.isEmpty(),
 		check('email', 'Please include a valid email').isEmail(),
@@ -25,7 +27,7 @@ router.post(
 			res.status(400).json({ errors: errors.array() });
 		}
 
-		const { userName, email, password, avatar } = req.body;
+		const { username, email, password, avatar } = req.body;
 
 		try {
 			let user = await User.findOne({ email });
@@ -35,7 +37,7 @@ router.post(
 			}
 
 			user = new User({
-				userName,
+				username,
 				email,
 				password,
 				avatar,

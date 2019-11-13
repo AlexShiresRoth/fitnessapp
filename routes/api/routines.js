@@ -7,6 +7,8 @@ const auth = require('../../middleware/auth');
 const Routine = require('../../models/Routine');
 const User = require('../../models/User');
 
+//TODO add a like and unlike route for comments
+
 //@route POST ROUTE /api/routines
 //@desc Create Route for workout routines
 router.post('/', [
@@ -191,6 +193,75 @@ router.put('/unlike/:id', auth, async (req, res) => {
 		await routine.save();
 
 		res.json(routine.likes);
+	} catch (error) {
+		console.error(error.message);
+		res.status(500).json({ msg: 'Internal Server Error' });
+	}
+});
+
+//@route PUT ROUTE
+//@desc add comment to routine
+router.put(
+	'/comment/:id',
+	[
+		auth,
+		[
+			check('text', 'You cannot send an empty comment :(')
+				.not()
+				.isEmpty(),
+		],
+	],
+	async (req, res) => {
+		const errors = validationResult(req);
+		if (!errors.isEmpty()) {
+			res.status(400).json({ msg: errors.array() });
+		}
+
+		try {
+			const user = await User.findById(req.user.id).select('-password');
+			const routine = await Routine.findById(req.params.id);
+
+			const newComment = {
+				text: req.body.text,
+				name: user.username,
+				user: req.user.id,
+			};
+
+			routine.comments.unshift(newComment);
+			await routine.save();
+			res.json(routine.comments);
+		} catch (error) {
+			console.error(error.message);
+			res.status(500).json({ msg: 'Internal Server Error' });
+		}
+	}
+);
+
+//@route PUT ROUTE
+//@desc delete a comment
+
+router.put('/comment/:id/:comment_id', auth, async (req, res) => {
+	try {
+		const routine = await Routine.findById(req.params.id);
+
+		const foundComment = routine.comments.find(comment => comment.id === req.params.comment_id);
+
+		if (!foundComment) {
+			return res.status(404).json({ msg: 'Uh oh! this comment cannot be found :(' });
+		}
+
+		if (req.user.id !== foundComment.user.toString()) {
+			return res.status(400).json({ msg: 'User Not Authorized' });
+		}
+
+		const filteredComments = routine.comments.filter(comment => comment.id !== req.params.comment_id);
+
+		routine.comments = filteredComments;
+
+		await routine.updateOne({ $set: { comments: filteredComments } });
+		await routine.save();
+		console.log(routine);
+		res.json(routine.comments);
 	} catch (error) {
 		console.error(error.message);
 		res.status(500).json({ msg: 'Internal Server Error' });
